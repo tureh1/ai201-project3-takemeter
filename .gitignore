@@ -1,0 +1,9 @@
+# Raw scraped Reddit JSON (provenance only; the labeled CSVs are the deliverable)
+raw_json/
+
+# Python
+__pycache__/
+*.pyc
+
+# Secrets / env
+.env

@@ -71,7 +71,43 @@ is only setup → **`seeking_help`**.
 **Decision rule:** First-person and after-the-fact → `sharing_experience`. Informing people
 so they can act (forward-looking, no personal account) → `announcement`.
 
-<!-- Additional hard examples found during annotation will be appended here in Milestone 3. -->
+### Hard examples actually encountered during annotation (Milestone 3)
+
+These are real r/iastate posts that gave me genuine pause, with the call I made:
+
+1. **"Update: Broke up with my engineering gf because she said my major is 'way easier
+   than hers'. AITA?"** — Classic experience+question. "AITA?" looks like a request, but
+   the post is a self-contained personal update; the question is rhetorical framing.
+   **Decided `sharing_experience`** (per Edge Case A: removing the question leaves a
+   complete post).
+
+2. **"Iowa State Names Jimmy Rogers Head Football Coach. Thoughts?"** — Announcement vs.
+   seeking_help. It tacks "Thoughts?" onto a news headline. The primary purpose is
+   broadcasting the hire; the one-word question is an engagement prompt, not a genuine
+   request for advice. **Decided `announcement`.**
+
+3. **"What's with the politeness? I'm new to Iowa. Whenever I go out people greet me
+   warmly..."** — Seeking_help vs. sharing_experience. Opens with a question but the body
+   is a first-person observation/account of the poster's experience; "What's with" is
+   rhetorical. **Decided `sharing_experience`.**
+
+4. **"Pls stop farting in class, use deodorant and take a damn shower..."** — Announcement
+   (PSA) vs. sharing_experience (venting). It reads like a public-service notice but is
+   really a first-person rant aimed at specific classmates, with no information to convey.
+   **Decided `sharing_experience`.**
+
+> A recurring tension: r/iastate has many memes/jokes/sports reactions that aren't pure
+> "experiences." I folded these into `sharing_experience` as the closest fit (the author is
+> expressing something, not asking or broadcasting). This is a known soft spot in the
+> taxonomy and is flagged for the evaluation reflection.
+
+### Annotation process & disclosure
+All 300 collected examples were **pre-labeled by Claude (Opus 4.8)** using the definitions
+above, then reviewed. Draft labels and per-row edge-case notes live in `takemeter_raw.csv`
+(full set) and the balanced, notebook-ready file is `takemeter_data.csv`. Class balance was
+adjusted by keeping all `announcement` examples and downsampling the two larger classes so
+no class is a runaway majority (final: ~40/40/20). This AI pre-labeling is disclosed again
+in the README's AI Usage section.
 
 ---
 
