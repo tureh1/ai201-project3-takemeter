@@ -12,102 +12,101 @@ A fine-tuned text classifier for discourse on **r/iastate** (the Iowa State Univ
 
 **Community:** [r/iastate](https://www.reddit.com/r/iastate/) — the Iowa State University subreddit.
 
-**Why this community:** The discourse on r/iastate is *functionally varied*. On any given
-day the front page mixes students asking for course/dorm/logistics advice, students
-recounting personal experiences with professors or campus life, and people broadcasting
-events, deadlines, and news. Those three modes show up constantly and are distinguishable
-from one another, which makes for a balanced, learnable classification task. It is also
-fully public and large enough to collect 200+ posts and comments without touching anything
-behind authentication.
+**Why this community:** The discourse on r/iastate varies enormously *in quality*. On any
+given day the front page mixes genuinely informative posts (detailed course/housing
+breakdowns, reasoned arguments about campus issues), thin one-line questions, and pure
+memes/reactions. That spread in effort and substance is exactly what makes "discourse
+quality" a real, learnable distinction here rather than a contrived one. It is also fully
+public and large enough to collect 200+ posts and comments without touching anything behind
+authentication.
 
 ---
 
 ## 2. Labels
 
-Three labels, assigned by the **primary purpose** of the post — *what is the post for?*
-The labels are mutually exclusive: a post gets exactly one, decided by its main intent.
+> **Taxonomy pivot (documented honestly).** My first taxonomy classified posts by *intent*
+> (`seeking_help` / `sharing_experience` / `announcement`). It was clean and mutually
+> exclusive, but the zero-shot Groq baseline scored **100%** on it — a red flag the project
+> page explicitly warns about. Two reasons: (1) post *intent* is surface-level and a 70B LLM
+> nails it, and (2) my labels were LLM-generated, so a second LLM reproduced them almost
+> perfectly (circularity). A 100% baseline leaves no room to measure whether fine-tuning
+> helps and produces no errors to analyze. So I switched to a genuinely **subjective**
+> taxonomy about *discourse quality*, below. This is the project's actual theme and yields a
+> non-trivial baseline plus analyzable mistakes.
 
-### `seeking_help`
-**Definition:** The post's main purpose is to get a question answered or to solicit
-advice/recommendations from the community.
+Three labels, assigned by the **effort/substance** of the post — *how much does this post
+actually contribute?* Mutually exclusive: each post gets exactly one.
 
-- *"Is Chem 167 with Prof. Smith doable if I'm not a science major? Trying to decide my schedule."*
-- *"Anyone know the cheapest place near campus to get a bike fixed?"*
+### `substantive`
+**Definition:** The post develops a point with specific detail, context, reasoning, or
+useful information — a reader genuinely gains something (a well-contextualized question, an
+informative answer, a reasoned opinion, a detailed account).
 
-### `sharing_experience`
-**Definition:** The post's main purpose is to recount a first-person account or state an
-opinion grounded in the author's own experience, without asking the community for anything.
+- *"Chatted ALL of thermo I — took a 20-credit overload, got mostly A's but it wrecked me. Is thermo II just as brutal with Zoz?"*
+- *"ISU budgets ~$1M in concessions for the whole season; Iowa made $2.4M on alcohol alone last year, so this could realistically triple concession revenue."*
 
-- *"Just finished my first semester in Friley — honestly the community was way better than I expected, met most of my friends there."*
-- *"Took Stat 226 online last fall. It was a slog but the exams were fair if you keep up with the homework."*
+### `low_effort`
+**Definition:** On-topic and genuine, but minimal — a bare or vague question, or a generic
+statement, with little or no context. You couldn't learn much or answer well from it alone.
 
-### `announcement`
-**Definition:** The post's main purpose is to broadcast news, an event, or information to
-the community, with no question and no personal-experience framing.
+- *"Friley. Is Stange Friley a good floor?"*
+- *"Pros and cons of rushing a sorority?"*
 
-- *"Free pizza at the Memorial Union from 5–7 tonight for the club fair."*
-- *"Reminder: spring parking permits go on sale Monday at 8 AM."*
+### `non_discourse`
+**Definition:** Not really discussion — memes, jokes, pure emotional reactions, image/photo
+or karma posts. The point is to amuse or react, not to inform or genuinely ask.
+
+- *"What a f***ing game.. So happy today"*
+- *"POV Butler is Your Therapist"*
 
 ---
 
 ## 3. Hard Edge Cases
 
-### Edge case A — "experience + question" (the primary anticipated ambiguity)
-A post that recounts a personal experience **and** asks a question, e.g.:
+The hardest boundary is **`substantive` ↔ `low_effort`** — *how much context counts as
+"effort"?* That subjectivity is intentional: it's what makes the task non-trivial. A second
+boundary, **`low_effort` ↔ `non_discourse`**, turns on whether a short post is a genuine
+(if thin) contribution or just a reaction/joke.
 
-> *"I took Chem 167 and it was brutal — does anyone know if 178 is any easier?"*
+**Decision rules:**
+- *substantive vs low_effort:* if the post supplies concrete specifics, backstory, reasoning,
+  or facts that a reader could act on or learn from → `substantive`. If it's a bare ask or a
+  generic statement with no elaboration → `low_effort`.
+- *low_effort vs non_discourse:* if the post is on-topic and sincerely trying to ask/state
+  something (even briefly) → `low_effort`. If its purpose is humor, a reaction, or karma →
+  `non_discourse`.
 
-This sits between `sharing_experience` and `seeking_help`.
+### Hard examples actually encountered during annotation
 
-**Decision rule:** Classify by **primary purpose**. If removing the question leaves a
-complete, self-standing post, the experience is the point → `sharing_experience`. If the
-experience is just context the author provides so people can answer, the question is the
-point → `seeking_help`. The example above exists to get an answer about 178, so the story
-is only setup → **`seeking_help`**.
+1. **"So we can spend millions on CyTown, coaching contracts, Workday upgrades, but we can't
+   pay to let alumni keep their emails?"** — One sentence (looks `low_effort`) but it cites
+   specific spending to make a real comparative point. **Decided `substantive`** — the
+   specifics carry an argument.
 
-### Edge case B — announcement vs. sharing_experience
-> *"Went to the free pizza event, it was packed and fun"* vs. *"Free pizza tonight 5–7."*
+2. **"Delts. Heard delts has to be dry first semester?? Doubt they will be, ifc hasn't done
+   anything despite the assault cases this year."** — A short rumor-question, but it carries
+   a concrete claim and context. **Decided `substantive`** (borderline with `low_effort`).
 
-**Decision rule:** First-person and after-the-fact → `sharing_experience`. Informing people
-so they can act (forward-looking, no personal account) → `announcement`.
+3. **"Hickory Park Sucks. That's all I have to say."** — An opinion, but zero substance and
+   purely a reaction. **Decided `non_discourse`**, not `low_effort` — there's no genuine
+   contribution, just a vent.
 
-### Hard examples actually encountered during annotation (Milestone 3)
+4. **"Bring Back the Dinky! Just need to lay some tracks, wouldn't even need to redo the
+   paint 😅"** — Reads like advocacy but it's a joke with no real content. **Decided
+   `non_discourse`.**
 
-These are real r/iastate posts that gave me genuine pause, with the call I made:
-
-1. **"Update: Broke up with my engineering gf because she said my major is 'way easier
-   than hers'. AITA?"** — Classic experience+question. "AITA?" looks like a request, but
-   the post is a self-contained personal update; the question is rhetorical framing.
-   **Decided `sharing_experience`** (per Edge Case A: removing the question leaves a
-   complete post).
-
-2. **"Iowa State Names Jimmy Rogers Head Football Coach. Thoughts?"** — Announcement vs.
-   seeking_help. It tacks "Thoughts?" onto a news headline. The primary purpose is
-   broadcasting the hire; the one-word question is an engagement prompt, not a genuine
-   request for advice. **Decided `announcement`.**
-
-3. **"What's with the politeness? I'm new to Iowa. Whenever I go out people greet me
-   warmly..."** — Seeking_help vs. sharing_experience. Opens with a question but the body
-   is a first-person observation/account of the poster's experience; "What's with" is
-   rhetorical. **Decided `sharing_experience`.**
-
-4. **"Pls stop farting in class, use deodorant and take a damn shower..."** — Announcement
-   (PSA) vs. sharing_experience (venting). It reads like a public-service notice but is
-   really a first-person rant aimed at specific classmates, with no information to convey.
-   **Decided `sharing_experience`.**
-
-> A recurring tension: r/iastate has many memes/jokes/sports reactions that aren't pure
-> "experiences." I folded these into `sharing_experience` as the closest fit (the author is
-> expressing something, not asking or broadcasting). This is a known soft spot in the
-> taxonomy and is flagged for the evaluation reflection.
+> Honest soft spot: the `substantive`/`low_effort` line depends on a judgment about "how much
+> context is enough," so reasonable annotators (and the model) will disagree on borderline
+> posts. That disagreement is the phenomenon this project is meant to surface, and it's the
+> focus of the evaluation reflection.
 
 ### Annotation process & disclosure
-All 300 collected examples were **pre-labeled by Claude (Opus 4.8)** using the definitions
-above, then reviewed. Draft labels and per-row edge-case notes live in `takemeter_raw.csv`
-(full set) and the balanced, notebook-ready file is `takemeter_data.csv`. Class balance was
-adjusted by keeping all `announcement` examples and downsampling the two larger classes so
-no class is a runaway majority (final: ~40/40/20). This AI pre-labeling is disclosed again
-in the README's AI Usage section.
+All 300 collected examples were **pre-labeled by Claude (Opus 4.8)** against the definitions
+above, with per-row notes on the borderline calls. Draft labels live in `takemeter_raw.csv`
+(full 300) and the balanced, notebook-ready file is `takemeter_data.csv`. Class balance was
+set by keeping **all** `substantive` and `non_discourse` examples and downsampling the
+`low_effort` majority, giving a final split of ~35% / 35% / 30% (no runaway class). This AI
+pre-labeling is disclosed again in the README's AI Usage section.
 
 ---
 
@@ -116,8 +115,8 @@ in the README's AI Usage section.
 **Source:** Public posts and top-level comments from [r/iastate](https://www.reddit.com/r/iastate/).
 I will pull from a mix of `Hot`, `New`, and `Top (this year)` so the sample isn't skewed
 toward a single moment (e.g., one viral thread). Both submissions (title + body) and
-substantive comments are fair game — comments are a good source of `seeking_help` and
-`sharing_experience`, while submissions skew toward `announcement`.
+comments are fair game — comments are a good source of `substantive` discussion (reasoned
+back-and-forth) and `non_discourse` quips, while submissions span all three levels.
 
 **How:** Manual collection (copy-paste into a spreadsheet) is the default — it keeps me
 close to the text, which matters for annotation quality. If manual collection drags, I may
