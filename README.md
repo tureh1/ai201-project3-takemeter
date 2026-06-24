@@ -22,6 +22,11 @@ than a contrived one — and it's exactly the kind of judgment a community-quali
 need to make. It's also fully public and large enough to collect 200+ examples without
 touching anything behind authentication.
 
+## Demo Video
+
+Demo video: https://drive.google.com/file/d/1v4Ebkcm4k1Ix-8NdGorTan4LWEUfy8mz/view?usp=sharing
+
+
 ---
 
 ## 2. Label taxonomy
