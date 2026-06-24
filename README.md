@@ -106,17 +106,39 @@ fix.
 
 ## 5. Baseline (zero-shot LLM)
 
-**Approach.** Each test post was classified by a Groq LLM with **no task-specific training**,
-using a prompt that names the task, defines all three labels with one example each, states
-the decision rule, and instructs the model to output only the label name (full prompt in
-[`colab_inputs.md`](colab_inputs.md)). Predictions were parsed and scored against the same
-locked 35-example test set used for the fine-tuned model.
+**Approach.** Each test post was classified by a Groq LLM with **no task-specific training**. I used the same locked 35-example test set that was later used for the fine-tuned DistilBERT model. The model received my label definitions, one example per label, and a strict instruction to output only one valid label name. All 35 baseline responses were parseable.
 
-**Model note.** The project specifies `llama-3.3-70b-versatile`, but its free-tier daily
-token budget was exhausted during testing, so the baseline was run on
-**`llama-3.1-8b-instant`** (a separate budget). The smaller model is weaker, which makes the
-baseline a slightly easier bar — disclosed here for honesty. All 35 responses were parseable
-(0 unparseable), confirming the prompt format worked.
+**Baseline model.** The project recommends `llama-3.3-70b-versatile`, but I exhausted the free-tier daily token budget while testing. To complete the baseline honestly without creating a new account or bypassing limits, I used Groq’s `llama-3.1-8b-instant`. This is disclosed because it makes the baseline slightly weaker than the recommended 70B model.
+
+**Prompt used.**
+text
+You are rating the discourse quality of posts from r/iastate, the Iowa State University subreddit.
+
+Assign each post to exactly ONE of these categories based on its primary contribution:
+
+substantive:
+The post develops a point with specific detail, context, reasoning, or useful information. A reader genuinely gains something from it.
+Example: "Chatted ALL of thermo I and got mostly A's, but the 20-credit overload wrecked me. Is thermo II with Zoz just as brutal?"
+
+low_effort:
+The post is on-topic and genuine, but minimal. It may be a bare question, vague statement, or generic claim with little context or reasoning.
+Example: "Friley. Is Stange Friley a good floor?"
+
+non_discourse:
+The post is not really discussion. It is mainly a meme, joke, pure reaction, image/karma post, or throwaway comment.
+Example: "POV Butler is Your Therapist"
+
+Decision rules:
+- Classify by contribution quality, not topic.
+- If a post gives specific context or reasoning, choose substantive.
+- If a post is a real question or statement but gives little context, choose low_effort.
+- If a post is mainly a joke, meme, or pure reaction, choose non_discourse.
+- Output ONLY the label name in lowercase.
+
+Valid labels:
+substantive
+low_effort
+non_discourse
 
 ---
 
@@ -249,21 +271,37 @@ decision — the 100% baseline made revisiting it the honest move.
 
 Per disclosure requirements, the specific ways I used AI tools:
 
-1. **Annotation / pre-labeling (disclosed).** I directed Claude (Opus 4.8) to assign one of
-   my three labels to all 300 collected posts using my planning.md definitions; it also wrote
-   per-row notes on borderline cases. I then reviewed the labels. **What I overrode/learned:**
-   this means my ground truth is partly AI-generated — and that circularity is precisely what
-   produced the 100% baseline on the first taxonomy, which I caught and corrected by pivoting
-   to a subjective scheme.
-2. **Label stress-testing & redesign.** I used Claude to diagnose the 100% baseline and to
-   design the `substantive`/`low_effort`/`non_discourse` taxonomy with decision rules. I chose
-   the final definitions and the example posts.
-3. **Failure-pattern analysis.** I gave Claude the list of wrong predictions and asked it to
-   find a systematic pattern; it proposed the "length-heuristic / can't-detect-humor" theory,
-   which I **verified myself against the confusion matrix** before writing §6–§7.
+I used AI tools as planning, annotation, debugging, and review support. I did not treat AI output as automatically correct; I checked the outputs against the rubric, the data, the model results, and the confusion matrix.
 
-(The data-collection/labeling scripts and a draft of this README were also written with
-Claude's help; all numbers are from my own Colab runs.)
+1. Claude — label stress-testing and taxonomy redesign
+
+**AI used:** Claude Opus 4.8
+
+**Prompt:** I asked Claude to review my original r/iastate label taxonomy and help explain why my first zero-shot baseline scored 100%. I provided the original labels, the baseline result, and the project warning that scores above 95% can signal labels that are too easy or data leakage.
+
+**Result:** Claude helped identify that my first taxonomy, `seeking_help` / `sharing_experience` / `announcement`, was mostly measuring post intent instead of discourse quality. Because the labels were surface-level, the Groq baseline could classify them almost perfectly. Claude suggested a harder discourse-quality taxonomy: `substantive`, `low_effort`, and `non_discourse`.
+
+**Reflection:** I revised my project instead of keeping the easy 100% result. I decided to pivot because the original labels did not create a meaningful fine-tuning task. This followed the course guidance to verify AI output and question suspicious results instead of trusting them.
+
+2. Claude — annotation assistance
+
+**AI used:** Claude Opus 4.8
+
+**Prompt:** I gave Claude my final label definitions and asked it to pre-label the collected r/iastate posts using exactly one of the three labels. I also asked it to flag borderline examples with notes so I could review the hard cases.
+
+**Result:** Claude generated draft labels for the collected dataset and added notes for ambiguous examples. These draft labels were used to create `takemeter_raw.csv`, and the balanced training file `takemeter_data.csv` was created from that labeled dataset.
+
+**Reflection:** I treated these as draft annotations, not final truth. I checked the label distribution, reviewed the edge-case notes, and used the baseline and fine-tuned model errors to evaluate whether the taxonomy was actually learnable. I also disclosed the annotation assistance because the course specifically asks students to be transparent about AI help during labeling.
+
+3. ChatGPT and Claude — debugging, documentation, and failure analysis
+
+**AI used:** ChatGPT and Claude
+
+**Prompt:** I used AI tools to help interpret notebook errors, understand the Groq rate-limit issue, revise my README, and analyze the wrong predictions from the fine-tuned model. For the failure analysis, I gave the model’s incorrect predictions and asked what pattern they suggested.
+
+**Result:** AI helped me identify the main error pattern: the fine-tuned DistilBERT model learned a length/detail heuristic. It often treated longer detailed posts as `substantive` and short humorous posts as `low_effort`, which explains why many `non_discourse` posts were misclassified.
+
+**Reflection:** I verified that pattern myself using the confusion matrix and wrong-prediction list. The confusion matrix showed 5 `non_discourse` posts being predicted as `low_effort` and 3 `low_effort` posts being predicted as `substantive`, which supported the pattern. This helped me write a stronger reflection on the gap between what I intended the model to learn and what it actually learned.
 
 ---
 
